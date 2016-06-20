@@ -17,7 +17,10 @@ import javax.sql.DataSource;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.dc.jdbc.core.ConnectionManager;
 import org.dc.jdbc.entity.SqlEntity;
+
+import com.alibaba.druid.pool.DruidDataSource;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -32,14 +35,19 @@ public class JedisHelper {
 	public static String DATA_KEY = "data";
 	public static String DATASOURCE_KEY = "dataSource";
 	
+	private static JedisHelper jedisHelper = new JedisHelper(JedisConfig.defaultJedisPool);
+	
+	public static JedisHelper getInstance(){
+		return jedisHelper;
+	}
+	
 	private static final Log log = LogFactory.getLog(JedisHelper.class);
 	private volatile JedisPool jedisPool;
 	
 	public JedisHelper(JedisPool jedisPool){
 		this.jedisPool = jedisPool;
 	}
-	public <T> T getSQLCache(SqlEntity sqlEntity,DataSource dataSource) throws Exception{
-		String sqlKey = this.getSQLKey(sqlEntity,dataSource);
+	public <T> T getSQLCache(String sqlKey) throws Exception{
 		Jedis jedis = null;
 		try {  
 			jedis = jedisPool.getResource();
@@ -55,9 +63,7 @@ public class JedisHelper {
 		}
 		return null;  
 	}
-	public void setSQLCache(SqlEntity sqlEntity,Object value,DataSource dataSource){
-		String sqlKey = this.getSQLKey(sqlEntity,dataSource);
-
+	public void setSQLCache(String sqlKey,DruidDataSource dataSource,Object value){
 		Jedis jedis = null;
 		Transaction t = null;
 		try {  
@@ -65,11 +71,11 @@ public class JedisHelper {
 			t = jedis.multi();
 			Map<byte[],byte[]> m = new HashMap<byte[],byte[]>();
 			m.put(DATA_KEY.getBytes(), SerializationUtils.serialize((Serializable) value));
-			m.put(DATASOURCE_KEY.getBytes(), String.valueOf(dataSource.hashCode()).getBytes());
+			m.put(DATASOURCE_KEY.getBytes(), dataSource.getName().getBytes());
 			t.hmset(sqlKey.getBytes(),m);
 			t.expire(sqlKey.getBytes(), EXPIRE_TIME);
 			//t.setex(sqlKey.getBytes(),EXPIRE_TIME, );
-			for (String tableName : sqlEntity.getTables()) {
+			for (String tableName : ConnectionManager.entityLocal.get().getTables()) {
 				t.sadd(tableName, sqlKey);
 			}
 			t.exec();
@@ -85,13 +91,13 @@ public class JedisHelper {
 			jedis.close();
 		}
 	}
-	public void delSQLCache(SqlEntity sqlEntity){
+	public void delSQLCache(String sqlKey){
 		Jedis jedis = null;
 		Transaction t = null;
 		try {  
 			jedis = jedisPool.getResource();
 			List<String> sqlKeyList = new ArrayList<String>();
-			for (String tableName : sqlEntity.getTables()) {
+			for (String tableName : ConnectionManager.entityLocal.get().getTables()) {
 				Set<String> sqlkeySet = jedis.smembers(tableName);
 				if(sqlkeySet!=null){
 					for (String sql : sqlkeySet) {
@@ -102,12 +108,12 @@ public class JedisHelper {
 				}
 			}
 			t = jedis.multi();
-			for (String sqlKey : sqlKeyList) {
-				Storage ss = Storage.getInstance();
-				ss.push(sqlKey);
-				//t.del(sql);
+			for (String key : sqlKeyList) {
+				//Storage ss = Storage.getInstance();
+				//ss.push(key);
+				t.del(key);
 			}
-			for (String tableName : sqlEntity.getTables()) {
+			for (String tableName : ConnectionManager.entityLocal.get().getTables()) {
 				t.del(tableName);
 			}
 			t.exec();

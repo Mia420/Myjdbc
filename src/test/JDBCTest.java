@@ -17,7 +17,7 @@ public class JDBCTest {
 	public void initJdbc(){
 		try {
 			JDBCConfig.isPrintSqlLog = true;
-
+			JDBCConfig.isSQLCache = true;
 			testDBHelper = new DBHelper(Configure.testSource);
 			accDBHelper= new DBHelper(Configure.accSource);
 			//LoadSqlUtil.loadSql("D:\\Git\\MyJdbc\\target\\classes\\test\\sql");
@@ -71,8 +71,13 @@ public class JDBCTest {
 		try{
 			Map<String,Object> user = new HashMap<String,Object>();
 			user.put("id", 4);
-			Byte name = testDBHelper.selectOne("select age from user where id =#{id} limit 1",Byte.class,user);
-			System.out.println(name);
+			Integer age = testDBHelper.selectOne("select age from user where id =#{id} limit 1",Integer.class,user);
+			System.out.println(age);
+			List<Map<String,Object>> list = testDBHelper.selectList("select * from user");
+			System.out.println(list);
+			List<User> userlist = testDBHelper.selectList("select * from user",User.class);
+			System.out.println(userlist);
+			testDBHelper.insert("insert into user(name,sex,age) values('dc',1,1)");
 			//String name = testDBHelper.selectOne("select name from user  limit 1",String.class);
 			/*List<Integer> list = testDBHelper.selectList("select id from user ",Integer.class);
 		for (int i = 0; i < list.size(); i++) {

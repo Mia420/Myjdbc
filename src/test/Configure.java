@@ -39,6 +39,7 @@ public class Configure {
 		testSource.setTestWhileIdle(true);
 		testSource.setPoolPreparedStatements(false);
 		testSource.setDriverClassName("com.mysql.jdbc.Driver");
+		testSource.setName("test");
 	}
 	static{
 		accSource.setUrl("jdbc:mysql://localhost:3306/account_ms?useUnicode=true&characterEncoding=UTF-8");
