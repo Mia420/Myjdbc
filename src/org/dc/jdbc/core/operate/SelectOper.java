@@ -74,7 +74,7 @@ public class SelectOper extends OperSuper{
 						list.add(map);
 					}
 					if(JDBCConfig.isSQLCache){
-						jedisHelper.setSQLCache(sqlKey,list);
+						jedisHelper.setSQLCache(sqlKey,dataSource.getName(),list);
 					}
 				}
 			}

@@ -59,37 +59,50 @@ public class JedisHelper {
 		}
 		return null;  
 	}
-	public void setSQLCache(String sqlKey,Object value){
+	public void setSQLCache(String sqlKey,String dataSourceName,Object value){
 		Jedis jedis = null;
 		Transaction t = null;
 		try {  
 			jedis = jedisPool.getResource();
 			t = jedis.multi();
 
-			boolean isPersistent = false;//是否持久化
+			boolean isPersistent = false;//是否持久化缓存
+			boolean isNoCache = false;//是否不缓存
 
 			String conf_tableNameStr = JedisConfig.properties.getProperty("tableCache");
 			
 			Set<String>  sql_table = ConnectionManager.entityLocal.get().getTables();
-			if(conf_tableNameStr!=null){
-				int i = 0;
+			if(conf_tableNameStr!=null){//解析配置文件
+				int i = 0;//不缓存
+				int j = 0;//持久化缓存
 				String[] conf_tables = conf_tableNameStr.split(",");
 				for (String conf_tableName : conf_tables) {
-					if(sql_table.contains(conf_tableName)){
-						i++;
+					String[] confs = conf_tableName.split(".");
+					if(dataSourceName.equals(confs[1]) && sql_table.contains(confs[2])){
+						if(confs[0].equals(0)){
+							i++;
+						}
+						if(confs[0].equals(1)){
+							j++;
+						}
 					}
 				}
-				if(i==sql_table.size()){
+				if(j==sql_table.size()){
 					isPersistent = true;
 				}
+				if(i==sql_table.size()){
+					isNoCache = true;
+				}
 			}
-			for (String tableName : ConnectionManager.entityLocal.get().getTables()) {
+			for (String tableName : sql_table) {
 				t.sadd(tableName, sqlKey);
 			}
-			if(isPersistent){
-				t.set(sqlKey.getBytes(), SerializationUtils.serialize((Serializable) value));
-			}else{
-				t.setex(sqlKey.getBytes(),EXPIRE_TIME,SerializationUtils.serialize((Serializable) value));
+			if(!isNoCache){
+				if(isPersistent){
+					t.set(sqlKey.getBytes(), SerializationUtils.serialize((Serializable) value));
+				}else{
+					t.setex(sqlKey.getBytes(),EXPIRE_TIME,SerializationUtils.serialize((Serializable) value));
+				}
 			}
 			t.exec();
 		} catch (Exception e) {
