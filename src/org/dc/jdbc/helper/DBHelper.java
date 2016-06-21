@@ -1,10 +1,7 @@
 package org.dc.jdbc.helper;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.sql.DataSource;
 
 import org.dc.jdbc.config.JDBCConfig;
 import org.dc.jdbc.core.ConnectionManager;
@@ -19,8 +16,6 @@ import org.dc.jdbc.entity.SqlEntity;
 
 import com.alibaba.druid.pool.DruidDataSource;
 
-import redis.clients.jedis.JedisPool;
-
 /**
  * 数据持久化操作类
  * sql执行三部曲：1，sql解析，2，获得数据库连接，3，执行核心jdbc操作。
@@ -28,20 +23,12 @@ import redis.clients.jedis.JedisPool;
  * @time 2015-8-17
  */
 public class DBHelper {
-	private volatile DataSource dataSource;
+	private volatile DruidDataSource dataSource;
 	private final ContextHandle contextHandler;
 	
-	public static Map<String,DataSource> dataSourceMaps = new HashMap<String,DataSource>();
-
 	public DBHelper(DruidDataSource dataSource){
 		this.dataSource = dataSource;
 		this.contextHandler = this.createContextHandle();
-		dataSourceMaps.put(dataSource.getName(), dataSource);
-	}
-	public DBHelper(DruidDataSource dataSource,JedisPool jedisPool){
-		this.dataSource = dataSource;
-		this.contextHandler = this.createContextHandle();
-		dataSourceMaps.put(dataSource.getName(), dataSource);
 	}
 	private ContextHandle createContextHandle(){
 		final ContextHandle ch = new ContextHandle();

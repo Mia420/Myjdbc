@@ -30,16 +30,16 @@ public class JedisHelper {
 	private static final int EXPIRE_TIME = 365*24*60*60;
 	public static String DATA_KEY = "data";
 	public static String DATASOURCE_KEY = "dataSource";
-	
+
 	private static JedisHelper jedisHelper = new JedisHelper(JedisConfig.defaultJedisPool);
-	
+
 	public static JedisHelper getInstance(){
 		return jedisHelper;
 	}
-	
+
 	private static final Log log = LogFactory.getLog(JedisHelper.class);
 	private volatile JedisPool jedisPool;
-	
+
 	public JedisHelper(JedisPool jedisPool){
 		this.jedisPool = jedisPool;
 	}
@@ -65,14 +65,31 @@ public class JedisHelper {
 		try {  
 			jedis = jedisPool.getResource();
 			t = jedis.multi();
-			/*Map<byte[],byte[]> m = new HashMap<byte[],byte[]>();
-			m.put(DATA_KEY.getBytes(), SerializationUtils.serialize((Serializable) value));
-			m.put(DATASOURCE_KEY.getBytes(), dataSource.getName().getBytes());
-			t.hmset(sqlKey.getBytes(),m);
-			t.expire(sqlKey.getBytes(), EXPIRE_TIME);*/
-			t.setex(sqlKey.getBytes(),EXPIRE_TIME,SerializationUtils.serialize((Serializable) value));
+
+			boolean isPersistent = false;//是否持久化
+
+			String conf_tableNameStr = JedisConfig.properties.getProperty("tableCache");
+			
+			Set<String>  sql_table = ConnectionManager.entityLocal.get().getTables();
+			if(conf_tableNameStr!=null){
+				int i = 0;
+				String[] conf_tables = conf_tableNameStr.split(",");
+				for (String conf_tableName : conf_tables) {
+					if(sql_table.contains(conf_tableName)){
+						i++;
+					}
+				}
+				if(i==sql_table.size()){
+					isPersistent = true;
+				}
+			}
 			for (String tableName : ConnectionManager.entityLocal.get().getTables()) {
 				t.sadd(tableName, sqlKey);
+			}
+			if(isPersistent){
+				t.set(sqlKey.getBytes(), SerializationUtils.serialize((Serializable) value));
+			}else{
+				t.setex(sqlKey.getBytes(),EXPIRE_TIME,SerializationUtils.serialize((Serializable) value));
 			}
 			t.exec();
 		} catch (Exception e) {

@@ -5,9 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-import javax.sql.DataSource;
-
 import org.dc.jdbc.cache.core.JedisHelper;
+import org.dc.jdbc.config.JDBCConfig;
 import org.dc.jdbc.core.ConnectionManager;
 import org.dc.jdbc.core.base.OperSuper;
 
@@ -23,16 +22,20 @@ public class InsertOper extends OperSuper{
     public static InsertOper getInstance(){
         return oper;
     }
-	public int insert(DataSource dataSource,String sql,Object[] params) throws Exception{
-		String key = super.getSQLKey(sql, params);
-		jedisHelper.delSQLCache(key);
+	public int insert(DruidDataSource dataSource,String sql,Object[] params) throws Exception{
+		if(JDBCConfig.isSQLCache){
+			String key = super.getSQLKey(sql, params,dataSource);
+			jedisHelper.delSQLCache(key);
+		}
 		
 		Connection conn = ConnectionManager.getConnection(dataSource);
 	    return super.preparedAndExcuteSQL(conn, sql, params);
 	}
 	public int[] insertBatch(DruidDataSource dataSource,String sql,Object[][] params) throws Exception{
-		String sqlkey = super.getSQLKey(sql, params);
-		jedisHelper.delSQLCache(sqlkey);
+		if(JDBCConfig.isSQLCache){
+			String key = super.getSQLKey(sql, params,dataSource);
+			jedisHelper.delSQLCache(key);
+		}
 		
 		PreparedStatement ps = null;
 		try {
@@ -62,9 +65,11 @@ public class InsertOper extends OperSuper{
 	 * @throws Exception
 	 */
 	@SuppressWarnings("unchecked")
-    public <T> T insertRtnPKKey(DataSource dataSource,String sql,Object[] params) throws Exception{
-		String sqlkey = super.getSQLKey(sql, params);
-		jedisHelper.delSQLCache(sqlkey);
+    public <T> T insertRtnPKKey(DruidDataSource dataSource,String sql,Object[] params) throws Exception{
+		if(JDBCConfig.isSQLCache){
+			String key = super.getSQLKey(sql, params,dataSource);
+			jedisHelper.delSQLCache(key);
+		}
 		
 		PreparedStatement ps = null;
 		ResultSet rs = null;

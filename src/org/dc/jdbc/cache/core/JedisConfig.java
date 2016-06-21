@@ -13,10 +13,10 @@ import redis.clients.jedis.JedisPoolConfig;
 public class JedisConfig {
 	private static final Log log = LogFactory.getLog(JedisHelper.class);
 	public static JedisPool defaultJedisPool;
+	public static Properties properties = new Properties();
 	static{
 		InputStream is = null;
 		try {
-			Properties properties = new Properties();
 			is = JedisConfig.class.getResourceAsStream("/jdbc_redis.properties");
 			properties.load(is);
 			JedisPoolConfig config = new JedisPoolConfig();
@@ -32,7 +32,7 @@ public class JedisConfig {
 			config.setMaxWaitMillis(Long.parseLong(properties.getProperty("redis.maxWaitMillis","-1")));
 			
 			//在borrow一个jedis实例时，是否提前进行validate操作；如果为true，则得到的jedis实例均是可用的；  
-			config.setTestOnBorrow(Boolean.parseBoolean(properties.getProperty("redis.testOnBorrow","false")));  
+			config.setTestOnBorrow(Boolean.parseBoolean(properties.getProperty("redis.testOnBorrow","false")));
 			defaultJedisPool = new JedisPool(config, properties.getProperty("redis.host","localhost"), Integer.parseInt(properties.getProperty("redis.port","6379")));
 		} catch (Exception e) {
 			log.error("",e);

@@ -9,14 +9,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.sql.DataSource;
-
 import org.dc.jdbc.cache.core.JedisHelper;
 import org.dc.jdbc.config.JDBCConfig;
 import org.dc.jdbc.core.ConnectionManager;
 import org.dc.jdbc.core.GlobalCache;
 import org.dc.jdbc.core.base.OperSuper;
+
+import com.alibaba.druid.pool.DruidDataSource;
 /**
  * 查询数据的操作
  * @author dc
@@ -40,13 +39,14 @@ public class SelectOper extends OperSuper{
 	 * @throws Exception 抛出各种可能出现的异常
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> List<T> selectList(DataSource dataSource,String sql,Class<? extends T> cls,Object[] params,int selectType) throws Exception{
+	public <T> List<T> selectList(DruidDataSource dataSource,String sql,Class<? extends T> cls,Object[] params,int selectType) throws Exception{
 		ResultSet rs = null;
 		PreparedStatement ps = null;
+		String sqlKey = null;
 		try {
 			List<Object> list = null;
 			if(JDBCConfig.isSQLCache){
-				String sqlKey = super.getSQLKey(sql, params);
+				sqlKey = super.getSQLKey(sql, params,dataSource);
 				list = jedisHelper.getSQLCache(sqlKey);
 			}
 			int cols_len = 0;
@@ -74,7 +74,6 @@ public class SelectOper extends OperSuper{
 						list.add(map);
 					}
 					if(JDBCConfig.isSQLCache){
-						String sqlKey = super.getSQLKey(sql, params);
 						jedisHelper.setSQLCache(sqlKey,list);
 					}
 				}
