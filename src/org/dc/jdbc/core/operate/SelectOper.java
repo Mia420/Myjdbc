@@ -10,13 +10,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.sql.DataSource;
+
 import org.dc.jdbc.cache.core.JedisHelper;
 import org.dc.jdbc.config.JDBCConfig;
 import org.dc.jdbc.core.ConnectionManager;
 import org.dc.jdbc.core.GlobalCache;
 import org.dc.jdbc.core.base.OperSuper;
-
-import com.alibaba.druid.pool.DruidDataSource;
 /**
  * 查询数据的操作
  * @author dc
@@ -29,23 +29,36 @@ public class SelectOper extends OperSuper{
 		return oper;
 	}
 
+	/**
+	 * 查询
+	 * @param dataSource 数据源
+	 * @param sql 标准的jdbc sql语句
+	 * @param cls 返回的数据类型，这个和数据库里面的字段类型保持一样。如果不一样，会抛出强转异常
+	 * @param params 参数数组
+	 * @param selectType 查询类型，1：selectOne，2：selectList
+	 * @return
+	 * @throws Exception 抛出各种可能出现的异常
+	 */
 	@SuppressWarnings("unchecked")
-	public <T> List<T> selectList(DruidDataSource dataSource,String sql,Class<? extends T> cls,Object[] params) throws Exception{
+	public <T> List<T> selectList(DataSource dataSource,String sql,Class<? extends T> cls,Object[] params,int selectType) throws Exception{
 		ResultSet rs = null;
 		PreparedStatement ps = null;
 		try {
 			List<Object> list = null;
 			if(JDBCConfig.isSQLCache){
-				String sqlKey = super.getSQLKey(sql, params, dataSource);
+				String sqlKey = super.getSQLKey(sql, params);
 				list = jedisHelper.getSQLCache(sqlKey);
 			}
 			int cols_len = 0;
-			if(list==null){
+			if(list==null){//如果缓存中没查到，去数据里面查找
 				Connection conn = ConnectionManager.getConnection(dataSource);
 				ps = conn.prepareStatement(sql);
 				rs = super.preparedSQLReturnRS(ps, sql, params);
 				rs.last();
 				int rowNum = rs.getRow();
+				if(selectType==1 && rowNum > 1){
+					throw new Exception("Query results too much!");
+				}
 				if(rowNum>0){//有数据
 					list = new ArrayList<Object>(rowNum);
 					rs.beforeFirst();
@@ -61,8 +74,8 @@ public class SelectOper extends OperSuper{
 						list.add(map);
 					}
 					if(JDBCConfig.isSQLCache){
-						String sqlKey = super.getSQLKey(sql, params, dataSource);
-						jedisHelper.setSQLCache(sqlKey,dataSource,list);
+						String sqlKey = super.getSQLKey(sql, params);
+						jedisHelper.setSQLCache(sqlKey,list);
 					}
 				}
 			}

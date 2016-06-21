@@ -28,7 +28,7 @@ import redis.clients.jedis.JedisPool;
  * @time 2015-8-17
  */
 public class DBHelper {
-	private volatile DruidDataSource dataSource;
+	private volatile DataSource dataSource;
 	private final ContextHandle contextHandler;
 	
 	public static Map<String,DataSource> dataSourceMaps = new HashMap<String,DataSource>();
@@ -71,11 +71,11 @@ public class DBHelper {
 		String sql = sqlEntity.getSql();
 		Object[] params_obj = sqlEntity.getParams();
 		
-		List<T> rtn_list = selectOper.selectList(dataSource, sql, returnClass, params_obj);
-		if(rtn_list.size()>1){
-			throw new Exception("Query results too much!");
+		List<T> rtn_list = selectOper.selectList(dataSource, sql, returnClass, params_obj,1);
+		if(rtn_list!=null){
+			return rtn_list.get(0);
 		}
-		return rtn_list.get(0);
+		return null;
 	}
 	public Map<String,Object> selectOne(String sqlOrID,Object...params) throws Exception{
 		return this.selectOne(sqlOrID, null,params);
@@ -85,7 +85,7 @@ public class DBHelper {
 		String sql = sqlEntity.getSql();
 		Object[] params_obj = sqlEntity.getParams();
 		
-		return selectOper.selectList(dataSource,sql,returnClass,params_obj);
+		return selectOper.selectList(dataSource,sql,returnClass,params_obj,2);
 	}
 	public List<Map<String,Object>> selectList(String sqlOrID,Object...params) throws Exception{
 		return this.selectList(sqlOrID, null, params);

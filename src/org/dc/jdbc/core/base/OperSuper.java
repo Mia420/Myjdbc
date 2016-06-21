@@ -6,8 +6,6 @@ import java.sql.ResultSet;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import com.alibaba.druid.pool.DruidDataSource;
 /**
  * 元操作父类，所有操作继承此类
  * @author DC
@@ -45,11 +43,11 @@ public abstract class OperSuper extends JdbcSuper{
 		return ps.executeQuery();
 	}
 	
-	public String getSQLKey(String sql,Object[] params,DruidDataSource dataSource){
+	public String getSQLKey(String sql,Object[] params){
 		StringBuilder rtn_params = new StringBuilder();
 		for (int i = 0; i < params.length; i++) {
 			rtn_params.append(String.valueOf(params[i]));
 		}
-		return sql+rtn_params.toString()+dataSource.getName();
+		return sql+rtn_params.toString();
 	}
 }

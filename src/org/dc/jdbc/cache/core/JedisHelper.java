@@ -7,7 +7,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,9 +18,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dc.jdbc.core.ConnectionManager;
 import org.dc.jdbc.entity.SqlEntity;
-
-import com.alibaba.druid.pool.DruidDataSource;
-
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Transaction;
@@ -31,7 +27,7 @@ import redis.clients.jedis.Transaction;
  * @time 2016-05-16
  */
 public class JedisHelper {
-	private static int EXPIRE_TIME = 365*24*60*60;
+	private static final int EXPIRE_TIME = 365*24*60*60;
 	public static String DATA_KEY = "data";
 	public static String DATASOURCE_KEY = "dataSource";
 	
@@ -63,18 +59,18 @@ public class JedisHelper {
 		}
 		return null;  
 	}
-	public void setSQLCache(String sqlKey,DruidDataSource dataSource,Object value){
+	public void setSQLCache(String sqlKey,Object value){
 		Jedis jedis = null;
 		Transaction t = null;
 		try {  
 			jedis = jedisPool.getResource();
 			t = jedis.multi();
-			Map<byte[],byte[]> m = new HashMap<byte[],byte[]>();
+			/*Map<byte[],byte[]> m = new HashMap<byte[],byte[]>();
 			m.put(DATA_KEY.getBytes(), SerializationUtils.serialize((Serializable) value));
 			m.put(DATASOURCE_KEY.getBytes(), dataSource.getName().getBytes());
 			t.hmset(sqlKey.getBytes(),m);
-			t.expire(sqlKey.getBytes(), EXPIRE_TIME);
-			//t.setex(sqlKey.getBytes(),EXPIRE_TIME, );
+			t.expire(sqlKey.getBytes(), EXPIRE_TIME);*/
+			t.setex(sqlKey.getBytes(),EXPIRE_TIME,SerializationUtils.serialize((Serializable) value));
 			for (String tableName : ConnectionManager.entityLocal.get().getTables()) {
 				t.sadd(tableName, sqlKey);
 			}
