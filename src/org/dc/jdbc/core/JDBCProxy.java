@@ -29,8 +29,9 @@ public final class JDBCProxy implements MethodInterceptor {
 		if(transactional!=null){//如果不为空，则开启事务
 			if(transactional.readonly()==false){
 				ConnectionManager.startTransaction();
+			}else{
+				ConnectionManager.setReadOnly();
 			}
-			ConnectionManager.entityLocal.get().setReadOnly(transactional.readonly());
 		}
 
 		Object invokeObj = null;

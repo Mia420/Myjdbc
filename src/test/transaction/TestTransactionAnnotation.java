@@ -12,21 +12,25 @@ import java.util.Map;
  * Created by wyx on 2016/4/23.
  */
 public class TestTransactionAnnotation {
-    private static UserService userService;
+	private static UserService userService;
 
-    @BeforeClass
-    public static void init() {
-        userService = JDBCProxy.getInstance().getTarget(UserService.class);
-    }
+	@BeforeClass
+	public static void init() {
+		userService = JDBCProxy.getInstance().getTarget(UserService.class);
+	}
 
-    @Test
-    public void testSelectWithReadonlyTransaction() throws Exception {
-        Map<String, Object> userMap = userService.login();
-        Assert.assertNotNull(userMap);
-    }
+	@Test
+	public void testSelectWithReadonlyTransaction() {
+		try{
+			Map<String, Object> userMap = userService.login();
+			Assert.assertNotNull(userMap);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
 
-    @Test(expected = Exception.class)
-    public void testInsertWithReadonlyTransaction() throws Exception {
-        userService.register();
-    }
+	@Test(expected = Exception.class)
+	public void testInsertWithReadonlyTransaction() throws Exception {
+		userService.register();
+	}
 }
