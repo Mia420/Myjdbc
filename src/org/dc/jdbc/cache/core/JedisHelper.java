@@ -47,7 +47,8 @@ public class JedisHelper {
 		Jedis jedis = null;
 		try {  
 			jedis = jedisPool.getResource();
-			byte[] obj_bytes = jedis.hget(sqlKey.getBytes(),DATA_KEY.getBytes());
+			//byte[] obj_bytes = jedis.hget(sqlKey.getBytes(),DATA_KEY.getBytes());
+			byte[] obj_bytes = jedis.get(sqlKey.getBytes());
 			if(obj_bytes!=null){
 				return SerializationUtils.deserialize(obj_bytes);
 			}
@@ -77,7 +78,7 @@ public class JedisHelper {
 				int j = 0;//持久化缓存
 				String[] conf_tables = conf_tableNameStr.split(",");
 				for (String conf_tableName : conf_tables) {
-					String[] confs = conf_tableName.split(".");
+					String[] confs = conf_tableName.split("\\.");
 					if(dataSourceName.equals(confs[1]) && sql_table.contains(confs[2])){
 						if(confs[0].equals(0)){
 							i++;

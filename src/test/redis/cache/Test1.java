@@ -24,10 +24,8 @@ public class Test1 {
 	@Test
 	public void cache1(){
 		try {
-			/*while (true) {
-				System.out.println(testDBHelper.selectList("select * from user"));
-			}*/
-			System.out.println(testDBHelper.insert("insert into user(name) values(?)","张三"));
+			System.out.println(testDBHelper.selectList("select * from user"));
+			//System.out.println(testDBHelper.insert("insert into user(name) values(?)","张三"));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
