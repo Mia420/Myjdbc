@@ -1,22 +1,25 @@
 package test;
-import java.sql.SQLException;
+import java.lang.reflect.Field;
+
+import org.dc.jdbc.core.DataSourceManager;
 
 import com.alibaba.druid.pool.DruidDataSource;
 
 public class Configure {
-	public static void main(String[] args) {
-		try {
-			testSource.getConnection();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+	public static void main(String[] args) throws IllegalArgumentException, IllegalAccessException {
+		Class<?> bean = testSource.getClass().getSuperclass();
+		Field[] fileds = bean.getDeclaredFields();
+		for(int i = 0 ; i < fileds.length; i++){  
+			Field f = fileds[i];
+			f.setAccessible(true);
+			//Object val = f.get(bean);//得到此属性的值     
+			System.out.println("name:"+f.getName());  
 		}
-		System.out.println(Configure.testSource.getName());
 	}
-    /**
-     * sql包目录，定义多个目录用逗号分割 
-     */
-    public static DruidDataSource testSource = new DruidDataSource();
+	/**
+	 * sql包目录，定义多个目录用逗号分割 
+	 */
+	public static DruidDataSource testSource = new DruidDataSource();
 	public static DruidDataSource accSource = new DruidDataSource();
 	static{
 		testSource.setUrl("jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=UTF-8");
@@ -29,7 +32,7 @@ public class Configure {
 				log.error("",e);
 			}
 			testSource.setConnectionProperties("config.decrypt=true");
-		*/
+		 */
 		testSource.setInitialSize(1);
 		testSource.setMaxActive(4);
 		testSource.setMinIdle(0);
@@ -52,7 +55,7 @@ public class Configure {
 				log.error("",e);
 			}
 			testSource.setConnectionProperties("config.decrypt=true");
-		*/
+		 */
 		accSource.setInitialSize(2);
 		accSource.setMaxActive(4);
 		accSource.setMinIdle(0);
@@ -62,5 +65,10 @@ public class Configure {
 		accSource.setTestWhileIdle(true);
 		accSource.setPoolPreparedStatements(false);
 		accSource.setDriverClassName("com.mysql.jdbc.Driver");
+		accSource.setName("acc");
+	}
+	static {
+		DataSourceManager.getInstance().registerDataSource(Configure.testSource);
+		DataSourceManager.getInstance().registerDataSource(Configure.accSource);
 	}
 }
