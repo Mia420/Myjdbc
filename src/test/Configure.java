@@ -1,7 +1,6 @@
 package test;
 import java.lang.reflect.Field;
 
-import org.dc.jdbc.core.DataSourceManager;
 
 import com.alibaba.druid.pool.DruidDataSource;
 
@@ -66,9 +65,5 @@ public class Configure {
 		accSource.setPoolPreparedStatements(false);
 		accSource.setDriverClassName("com.mysql.jdbc.Driver");
 		accSource.setName("acc");
-	}
-	static {
-		DataSourceManager.getInstance().registerDataSource(Configure.testSource);
-		DataSourceManager.getInstance().registerDataSource(Configure.accSource);
 	}
 }
