@@ -12,7 +12,7 @@ public class Test1 {
 	@Before
 	public void initJdbc(){
 		try {
-			JDBCConfig.setProFileName("myjdbc");
+			JDBCConfig.setProFileName("resource/myjdbc");
 			testDBHelper = new DBHelper(Configure.testSource);
 			//LoadSqlUtil.loadSql("D:\\Git\\MyJdbc\\target\\classes\\test\\sql");
 		} catch (Exception e) {
