@@ -16,8 +16,10 @@ import javax.sql.DataSource;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.dc.jdbc.config.JDBCConfig;
 import org.dc.jdbc.core.ConnectionManager;
 import org.dc.jdbc.entity.SqlEntity;
+
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Transaction;
@@ -27,22 +29,21 @@ import redis.clients.jedis.Transaction;
  * @time 2016-05-16
  */
 public class JedisHelper {
+	private static final Log log = LogFactory.getLog(JedisHelper.class);
+	
+	private static volatile JedisPool jedisPool = JedisConfig.defaultJedisPool;
+	
 	private static final int EXPIRE_TIME = 365*24*60*60;
 	public static String DATA_KEY = "data";
 	public static String DATASOURCE_KEY = "dataSource";
 
-	private static JedisHelper jedisHelper = new JedisHelper(JedisConfig.defaultJedisPool);
+	public JedisHelper(){}
 
+	private static JedisHelper jedisHelper = new JedisHelper();
 	public static JedisHelper getInstance(){
 		return jedisHelper;
 	}
-
-	private static final Log log = LogFactory.getLog(JedisHelper.class);
-	private volatile JedisPool jedisPool;
-
-	public JedisHelper(JedisPool jedisPool){
-		this.jedisPool = jedisPool;
-	}
+	
 	public <T> T getSQLCache(String sqlKey) throws Exception{
 		Jedis jedis = null;
 		try {  
@@ -70,7 +71,7 @@ public class JedisHelper {
 			boolean isPersistent = false;//是否持久化缓存
 			boolean isNoCache = false;//是否不缓存
 
-			String conf_tableNameStr = JedisConfig.properties.getProperty("tableCache");
+			String conf_tableNameStr = JDBCConfig.tableCache;
 			
 			Set<String>  sql_table = ConnectionManager.entityLocal.get().getTables();
 			if(conf_tableNameStr!=null){//解析配置文件
@@ -80,10 +81,10 @@ public class JedisHelper {
 				for (String conf_tableName : conf_tables) {
 					String[] confs = conf_tableName.split("\\.");
 					if(dataSourceName.equals(confs[1]) && sql_table.contains(confs[2])){
-						if(confs[0].equals(0)){
+						if(confs[0].equals("0")){
 							i++;
 						}
-						if(confs[0].equals(1)){
+						if(confs[0].equals("1")){
 							j++;
 						}
 					}
@@ -95,10 +96,10 @@ public class JedisHelper {
 					isNoCache = true;
 				}
 			}
-			for (String tableName : sql_table) {
-				t.sadd(tableName, sqlKey);
-			}
 			if(!isNoCache){
+				for (String tableName : sql_table) {
+					t.sadd(tableName, sqlKey);
+				}
 				if(isPersistent){
 					t.set(sqlKey.getBytes(), SerializationUtils.serialize((Serializable) value));
 				}else{

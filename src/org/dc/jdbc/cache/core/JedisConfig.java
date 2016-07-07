@@ -1,49 +1,39 @@
 package org.dc.jdbc.cache.core;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Properties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.dc.jdbc.config.ConfigManager;
+import org.dc.jdbc.config.JDBCConfig;
 
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
 public class JedisConfig {
-	private static final Log log = LogFactory.getLog(JedisHelper.class);
+	public static ConfigManager configManager = ConfigManager.getInstance();
+	private static final Log jdbclog = LogFactory.getLog(JedisHelper.class);
 	public static JedisPool defaultJedisPool;
-	public static Properties properties = new Properties();
+	public static Properties defaultProperties = new Properties();
 	static{
-		InputStream is = null;
 		try {
-			is = JedisConfig.class.getResourceAsStream("/jdbc_redis.properties");
-			properties.load(is);
 			JedisPoolConfig config = new JedisPoolConfig();
 			//最大空闲连接数, 默认8个
-			config.setMaxIdle(Integer.parseInt(properties.getProperty("redis.maxIdle","8")));
+			config.setMaxIdle(Integer.parseInt(configManager.getProperty(JDBCConfig.profileName, "redis.maxIdle")));
 			//最小空闲连接数, 默认0
-			config.setMinIdle(Integer.parseInt(properties.getProperty("redis.minIdle","0")));
+			config.setMinIdle(Integer.parseInt(configManager.getProperty(JDBCConfig.profileName, "redis.minIdle")));
 			
 			//最大连接数, 默认8个
-			config.setMaxTotal(Integer.parseInt(properties.getProperty("redis.maxTotal", "8")));
+			config.setMaxTotal(Integer.parseInt(configManager.getProperty(JDBCConfig.profileName, "redis.maxTotal")));
 			
 			//得到一个jedis实例的最大的等待时间(毫秒)，默认阻塞，如果超过等待时间，则直接抛出JedisConnectionException；  
-			config.setMaxWaitMillis(Long.parseLong(properties.getProperty("redis.maxWaitMillis","-1")));
+			config.setMaxWaitMillis(Long.parseLong(configManager.getProperty(JDBCConfig.profileName, "redis.maxWaitMillis")));
 			
 			//在borrow一个jedis实例时，是否提前进行validate操作；如果为true，则得到的jedis实例均是可用的；  
-			config.setTestOnBorrow(Boolean.parseBoolean(properties.getProperty("redis.testOnBorrow","false")));
-			defaultJedisPool = new JedisPool(config, properties.getProperty("redis.host","localhost"), Integer.parseInt(properties.getProperty("redis.port","6379")));
+			config.setTestOnBorrow(Boolean.parseBoolean(configManager.getProperty(JDBCConfig.profileName, "redis.testOnBorrow")));
+			defaultJedisPool = new JedisPool(config,configManager.getProperty(JDBCConfig.profileName, "redis.host") , Integer.parseInt(configManager.getProperty(JDBCConfig.profileName, "redis.port")));
 		} catch (Exception e) {
-			log.error("",e);
-		}finally{
-			if(is!=null){
-				try {
-					is.close();
-				} catch (IOException e) {
-					log.error("",e);
-				}
-			}
+			jdbclog.error("",e);
 		}
 	}
 }
