@@ -80,12 +80,12 @@ public class ConfigManager {
 		catch (Exception e){
 			jdbclog.error("",e);
 		} finally {
-			try {
-				if (in != null){
+			if (in != null){
+				try {
 					in.close();
+				} catch (Exception e) {
+					jdbclog.error("",e);
 				}
-			} catch (Exception e) {
-				jdbclog.error("",e);
 			}
 		}
 		return properties;
