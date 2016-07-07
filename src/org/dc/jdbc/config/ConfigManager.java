@@ -25,11 +25,11 @@ public class ConfigManager {
 		if ((key == null) || (profileName == null)) {
 			throw new IllegalArgumentException("key is null");
 		}
-		Properties properties = (Properties)proMap.get(profileName);
+		Properties properties = proMap.get(profileName);
 
 		if (properties == null) {
 			synchronized (this){
-				if (properties == null){
+				if (proMap.get(profileName) == null){
 					properties = loadProps(profileName);
 
 					if (properties != null ){
