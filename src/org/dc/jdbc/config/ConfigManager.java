@@ -46,7 +46,7 @@ public class ConfigManager {
 
 
 	public Properties loadProps(String proFileName){
-		
+
 
 		Properties properties = null;
 
@@ -58,24 +58,22 @@ public class ConfigManager {
 				in = url.openStream();
 			} else {
 				String basePath = null;
-	    		URL resource =  ConfigManager.class.getResource(".");
-	    		//兼容web应用，java应用，resin服务器配置文件获取方法
-	    		if(resource==null){
-	    			basePath = ConfigManager.class.getResource("/").getPath();
-	    		}else{
-	    			basePath = resource.getPath();
-	    			if(basePath.contains("/target/classes/")){
-	    				basePath = basePath.substring(0,basePath.indexOf("/target/classes/"));
-	    			}else{
-	    				basePath = basePath.substring(0,basePath.indexOf("/WEB-INF/classes/")+17);
-	    			}
-	    		}
-	    		
-	    		String realPath = basePath+"/"+proFileName+".properties";
-	    		jdbclog.info("Getting Config: "+realPath);
-	    		in = new FileInputStream(realPath);
-	    		
-				properties.load(in);
+				URL resource =  ConfigManager.class.getResource(".");
+				//兼容web应用，java应用，resin服务器配置文件获取方法
+				if(resource==null){
+					basePath = ConfigManager.class.getResource("/").getPath();
+				}else{
+					basePath = resource.getPath();
+					if(basePath.contains("/target/classes/")){
+						basePath = basePath.substring(0,basePath.indexOf("/target/classes/"));
+					}else{
+						basePath = basePath.substring(0,basePath.indexOf("/WEB-INF/classes/")+17);
+					}
+				}
+
+				String realPath = basePath+"/"+proFileName+".properties";
+				jdbclog.info("Getting Config: "+realPath);
+				in = new FileInputStream(realPath);
 			}
 			properties.load(in);
 		}
