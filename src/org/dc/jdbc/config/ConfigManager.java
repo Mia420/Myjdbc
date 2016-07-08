@@ -17,7 +17,7 @@ public class ConfigManager {
 	private static ConfigManager configManger = new ConfigManager();
 
 	private static volatile Map<String, Properties> proMap = new HashMap<String, Properties>();
-
+	private ConfigManager(){}
 	public static ConfigManager getInstance(){
 		return configManger;
 	}
@@ -76,8 +76,7 @@ public class ConfigManager {
 				in = new FileInputStream(realPath);
 			}
 			properties.load(in);
-		}
-		catch (Exception e){
+		}catch (Exception e){
 			jdbclog.error("",e);
 		} finally {
 			if (in != null){
