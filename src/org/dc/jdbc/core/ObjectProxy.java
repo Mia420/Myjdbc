@@ -3,6 +3,7 @@ package org.dc.jdbc.core;
 import java.lang.reflect.Method;
 
 import org.dc.jdbc.anno.Transactional;
+import org.dc.jdbc.core.inter.IConnectionManager;
 
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
@@ -12,16 +13,17 @@ import net.sf.cglib.proxy.MethodProxy;
  * @author dc
  * @time 2015-8-17
  */
-public final class JDBCProxy implements MethodInterceptor {
+public final class ObjectProxy implements MethodInterceptor {
 
+	private static IConnectionManager connManager = ConnectionManager.getInstance();
 	private static ThreadLocal<Method> methodLocal = new ThreadLocal<Method>();
 
-	private final static  JDBCProxy jdbcProxy = new JDBCProxy();
-	public static JDBCProxy getInstance(){
+	private final static  ObjectProxy jdbcProxy = new ObjectProxy();
+	public static ObjectProxy getInstance(){
 		return jdbcProxy;
 	}
 
-	private JDBCProxy(){}
+	private ObjectProxy(){}
 	/**
 	 * 新增的事务嵌套逻辑
 	 */
@@ -37,9 +39,9 @@ public final class JDBCProxy implements MethodInterceptor {
 
 			if(transactional!=null){//如果不为空，则开启事务
 				if(transactional.readonly()==false){
-					ConnectionManager.startTransaction();
+					connManager.startTransaction();
 				}else{
-					ConnectionManager.setReadOnly();
+					connManager.setReadOnly();
 				}
 			}
 		}
@@ -52,16 +54,16 @@ public final class JDBCProxy implements MethodInterceptor {
 			//执行目标方法
 			invokeObj = proxy.invokeSuper(obj, objects);
 			if(isDo){
-				ConnectionManager.commit();
+				connManager.commit();
 			}
 		}catch(Throwable e){
 			if(isDo){
-				ConnectionManager.rollback();
+				connManager.rollback();
 			}
 			throw e;
 		}finally{
 			if(isDo){
-				ConnectionManager.closeConnection();
+				connManager.closeConnection();
 			}
 		}
 		return invokeObj;

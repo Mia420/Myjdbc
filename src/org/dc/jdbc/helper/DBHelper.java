@@ -1,15 +1,19 @@
 package org.dc.jdbc.helper;
 
+import java.lang.reflect.Proxy;
+import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
+
+import javax.sql.DataSource;
 
 import org.dc.jdbc.config.JDBCConfig;
 import org.dc.jdbc.core.ConnectionManager;
 import org.dc.jdbc.core.ContextHandle;
-import org.dc.jdbc.core.operate.DeleteOper;
-import org.dc.jdbc.core.operate.InsertOper;
-import org.dc.jdbc.core.operate.SelectOper;
-import org.dc.jdbc.core.operate.UpdateOper;
+import org.dc.jdbc.core.inter.IConnectionManager;
+import org.dc.jdbc.core.operate.IJdbcOperate;
+import org.dc.jdbc.core.operate.JDBCOperateImp;
+import org.dc.jdbc.core.proxy.JDBCCacheProxy;
 import org.dc.jdbc.core.sqlhandler.PrintSqlLogHandler;
 import org.dc.jdbc.core.sqlhandler.XmlSqlHandler;
 import org.dc.jdbc.entity.SqlEntity;
@@ -23,14 +27,26 @@ import com.alibaba.druid.pool.DruidDataSource;
  * @time 2015-8-17
  */
 public class DBHelper {
-	private volatile DruidDataSource dataSource;
-	private final ContextHandle contextHandler;
-	
+	private volatile DataSource dataSource;
+	private ContextHandle contextHandler;
+	private static IConnectionManager connectionManager = ConnectionManager.getInstance();
+
+	private static IJdbcOperate OPERATE;
+	static{//初始化
+		JDBCOperateImp imp = JDBCOperateImp.getInstance();
+		if(JDBCConfig.isSQLCache){
+			OPERATE = (IJdbcOperate) Proxy.newProxyInstance(
+					imp.getClass().getClassLoader(), 
+					imp.getClass().getInterfaces(), new JDBCCacheProxy(imp));
+		}else{
+			OPERATE = imp; 
+		}
+	}
 	public DBHelper(DruidDataSource dataSource){
 		this.dataSource = dataSource;
-		this.contextHandler = this.createContextHandle();
+		this.init();
 	}
-	private ContextHandle createContextHandle(){
+	private void init(){
 		final ContextHandle ch = new ContextHandle();
 
 		//初始化程序
@@ -45,24 +61,22 @@ public class DBHelper {
 		if(JDBCConfig.isPrintSqlLog){
 			ch.registerSQLHandle(PrintSqlLogHandler.getInstance());
 		}
-		return ch;
+		this.contextHandler = ch;
+
+		//初始化连接管理
+		//this.connectionManager  = ConnectionManager.getInstance();
 	}
 
-	private static final SelectOper selectOper = SelectOper.getInstance();
-	private static final UpdateOper updateOper = UpdateOper.getInstance();
-	private static final InsertOper insertOper = InsertOper.getInstance();
-	private static final DeleteOper deleteOper = DeleteOper.getInstance();
-
 	public <T> T selectOne(String sqlOrID,Class<? extends T> returnClass,Object...params) throws Exception{
-		SqlEntity sqlEntity = contextHandler.handleRequest(sqlOrID,params);
-		String sql = sqlEntity.getSql();
-		Object[] params_obj = sqlEntity.getParams();
-		
-		List<T> rtn_list = selectOper.selectList(dataSource, sql, returnClass, params_obj,1);
-		if(rtn_list!=null){
+
+		List<T> rtn_list = this.selectList(sqlOrID, returnClass, params);
+		if(rtn_list==null){
+			return null;
+		}else if(rtn_list.size()>1){
+			throw new Exception("Query results too much!");
+		}else{
 			return rtn_list.get(0);
 		}
-		return null;
 	}
 	public Map<String,Object> selectOne(String sqlOrID,Object...params) throws Exception{
 		return this.selectOne(sqlOrID, null,params);
@@ -71,8 +85,9 @@ public class DBHelper {
 		SqlEntity sqlEntity = contextHandler.handleRequest(sqlOrID,params);
 		String sql = sqlEntity.getSql();
 		Object[] params_obj = sqlEntity.getParams();
-		
-		return selectOper.selectList(dataSource,sql,returnClass,params_obj,2);
+
+		Connection conn = connectionManager.getConnection(dataSource);
+		return OPERATE.selectList(conn,sql,returnClass,params_obj);
 	}
 	public List<Map<String,Object>> selectList(String sqlOrID,Object...params) throws Exception{
 		return this.selectList(sqlOrID, null, params);
@@ -88,8 +103,9 @@ public class DBHelper {
 		SqlEntity sqlEntity = contextHandler.handleRequest(sqlOrID,params);
 		String sql = sqlEntity.getSql();
 		Object[] params_obj = sqlEntity.getParams();
-	
-		return insertOper.insert(dataSource, sql, params_obj);
+
+		Connection conn = connectionManager.getConnection(dataSource);
+		return OPERATE.insert(conn, sql, params_obj);
 	}
 	/**
 	 * 单条语句插入，返回一个主键
@@ -102,14 +118,18 @@ public class DBHelper {
 		SqlEntity sqlEntity = contextHandler.handleRequest(sqlOrID,params);
 		String sql = sqlEntity.getSql();
 		Object[] params_obj = sqlEntity.getParams();
-		return insertOper.insertRtnPKKey(dataSource, sql, params_obj);
+
+		Connection conn = connectionManager.getConnection(dataSource);
+		return OPERATE.insertRtnPKKey(conn, sql, params_obj);
 	}
 
 	public int update(String sqlOrID,Object...params) throws Exception{
 		SqlEntity sqlEntity = contextHandler.handleRequest(sqlOrID,params);
 		String sql = sqlEntity.getSql();
 		Object[] params_obj = sqlEntity.getParams();
-		return updateOper.update(dataSource, sql, params_obj);
+
+		Connection conn = connectionManager.getConnection(dataSource);
+		return OPERATE.update(conn, sql, params_obj);
 	}
 
 
@@ -117,10 +137,12 @@ public class DBHelper {
 		SqlEntity sqlEntity = contextHandler.handleRequest(sqlOrID,params);
 		String sql = sqlEntity.getSql();
 		Object[] params_obj = sqlEntity.getParams();
-		return deleteOper.delete(dataSource, sql, params_obj);
+
+		Connection conn = connectionManager.getConnection(dataSource);
+		return OPERATE.delete(conn, sql, params_obj);
 	}
 
 	public void rollback() throws Exception{
-		ConnectionManager.rollback(dataSource);
+		connectionManager.rollback(dataSource);
 	}
 }

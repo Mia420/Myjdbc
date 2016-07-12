@@ -30,9 +30,9 @@ import redis.clients.jedis.Transaction;
  */
 public class JedisHelper {
 	private static final Log log = LogFactory.getLog(JedisHelper.class);
-	
+
 	private static volatile JedisPool jedisPool = JedisConfig.defaultJedisPool;
-	
+
 	private static final int EXPIRE_TIME = 365*24*60*60;
 	public static String DATA_KEY = "data";
 	public static String DATASOURCE_KEY = "dataSource";
@@ -43,8 +43,8 @@ public class JedisHelper {
 	public static JedisHelper getInstance(){
 		return jedisHelper;
 	}
-	
-	public <T> T getSQLCache(String sqlKey) throws Exception{
+
+	public <T> T getSQLCache(String sqlKey){
 		Jedis jedis = null;
 		try {  
 			jedis = jedisPool.getResource();
@@ -56,8 +56,14 @@ public class JedisHelper {
 		} catch (Exception e) {  
 			log.error("",e);
 		} finally {
-			//返还到连接池  
-			jedis.close();
+			if(jedis!=null){
+				//返还到连接池 
+				try{
+					jedis.close();
+				}catch(Exception e){
+					log.error("",e);
+				}
+			}
 		}
 		return null;  
 	}
@@ -72,7 +78,7 @@ public class JedisHelper {
 			boolean isNoCache = false;//是否不缓存
 
 			String conf_tableNameStr = JDBCConfig.tableCache;
-			
+
 			Set<String>  sql_table = ConnectionManager.entityLocal.get().getTables();
 			if(conf_tableNameStr!=null){//解析配置文件
 				int i = 0;//不缓存
@@ -110,13 +116,21 @@ public class JedisHelper {
 		} catch (Exception e) {
 			log.error("",e);
 		} finally {
-			try {
-				t.close();
-			} catch (IOException e) {
-				log.error("",e);
+			if(t!=null){
+				try {
+					t.close();
+				} catch (Exception e) {
+					log.error("",e);
+				}
 			}
-			//返还到连接池  
-			jedis.close();
+			if(jedis!=null){
+				//返还到连接池 
+				try{
+					jedis.close();
+				}catch(Exception e){
+					log.error("",e);
+				}
+			}
 		}
 	}
 	public void delSQLCache(String sqlKey){

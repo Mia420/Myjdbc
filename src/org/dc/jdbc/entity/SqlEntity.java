@@ -1,6 +1,5 @@
 package org.dc.jdbc.entity;
 
-import java.io.Serializable;
 import java.sql.Connection;
 import java.util.HashMap;
 import java.util.Map;
@@ -8,15 +7,20 @@ import java.util.Set;
 
 import javax.sql.DataSource;
 
-public class SqlEntity implements Serializable{
-	private static final long serialVersionUID = -7425527965344197867L;
+/**
+ * 当前线程上下文全局对象
+ * @author DC
+ *
+ */
+public class SqlEntity{
 	private String sql;
     private Object[] params;
     private Set<String> tables;
     private boolean transaction;
     private boolean readOnly;
-    private Map<DataSource,Connection> dataSourceMap = new HashMap<DataSource,Connection>();
     
+    //连接重用关联设计
+    private Map<DataSource,Connection> dataSourceMap = new HashMap<DataSource,Connection>();
     
 	public Map<DataSource, Connection> getDataSourceMap() {
 		return dataSourceMap;

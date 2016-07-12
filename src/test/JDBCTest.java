@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.dc.jdbc.config.JDBCConfig;
 import org.dc.jdbc.core.ConnectionManager;
+import org.dc.jdbc.core.inter.IConnectionManager;
 import org.dc.jdbc.helper.DBHelper;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,11 +14,14 @@ import org.junit.Test;
 public class JDBCTest {
 	private static DBHelper accDBHelper;
 	private static DBHelper testDBHelper;
+	
+	private static IConnectionManager connectionManage = ConnectionManager.getInstance();
+	
 	@Before
 	public void initJdbc(){
 		try {
-			JDBCConfig.isPrintSqlLog = true;
-			JDBCConfig.isSQLCache = true;
+			JDBCConfig.isPrintSqlLog = false;
+			JDBCConfig.isSQLCache = false;
 			testDBHelper = new DBHelper(Configure.testSource);
 			accDBHelper= new DBHelper(Configure.accSource);
 			//LoadSqlUtil.loadSql("D:\\Git\\MyJdbc\\target\\classes\\test\\sql");
@@ -30,7 +34,7 @@ public class JDBCTest {
 	public void select(){
 		try {
 			//ConnectionManager.transactionThreadLocal.set(null);
-			ConnectionManager.startTransaction();
+			connectionManage.startTransaction();
 			/*start*/
 			Map<String,Object> map = testDBHelper.selectOne("select * from user limit 1");
 			List<Map<String,Object>> mapList = testDBHelper.selectList("select * from user");
@@ -63,7 +67,7 @@ public class JDBCTest {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}finally{
-			ConnectionManager.closeConnection();
+			connectionManage.closeConnection();
 		}
 	}
 	@Test
@@ -95,24 +99,24 @@ public class JDBCTest {
 		}catch(Exception e){
 			e.printStackTrace();
 		}
-		ConnectionManager.closeConnection();
+		connectionManage.closeConnection();
 	}
 	@Test
 	public void insert(){
 		//开启事务
-		ConnectionManager.startTransaction();
+		connectionManage.startTransaction();
 		try {
 			int num = testDBHelper.insert("insert into user(name,age) values(?,?)", "ddddddc",12);
 			Integer age = testDBHelper.selectOne("select age from user limit 1",Integer.class);
 			System.out.println(age);
 			System.out.println(num);
 			//提交
-			ConnectionManager.commit();
+			connectionManage.commit();
 		} catch (Exception e) {
 			e.printStackTrace();
-			ConnectionManager.rollback();
+			connectionManage.rollback();
 		}finally{
-			ConnectionManager.closeConnection();
+			connectionManage.closeConnection();
 		}
 	}
 }
