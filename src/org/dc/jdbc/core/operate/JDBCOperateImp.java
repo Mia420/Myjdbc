@@ -1,6 +1,7 @@
 package org.dc.jdbc.core.operate;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -91,13 +92,14 @@ public class JDBCOperateImp extends OperSuper implements IJdbcOperate{
 						}
 						return (List<T>)list;
 					}else{//对象
+						super.parseSqlResultToObject(rs,cls,list);
 						Map<String,Field> fieldsMap = GlobalCache.getCacheFields(cls);
 						for (int i = 0,len=list.size(); i < len; i++) {
 							Map<String, Object> m = (Map<String, Object>) list.get(i);
 							Object obj_newInsten = cls.newInstance();
 							for (String key : m.keySet()) {
 								Field field = fieldsMap.get(key);
-								if(field!=null){
+								if(field!=null && field.getModifiers()!=Modifier.STATIC){
 									field.setAccessible(true);
 									field.set(obj_newInsten, m.get(key));
 								}

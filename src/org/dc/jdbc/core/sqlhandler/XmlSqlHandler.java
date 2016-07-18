@@ -87,8 +87,8 @@ public class XmlSqlHandler extends SQLHandler{
 				if(allParamList!=null){
 					returnList = allParamList;
 				}
-			}else if(tok == Token.FROM || tok == Token.IDENTIFIER || tok == Token.INTO || tok == Token.UPDATE || tok == Token.USER){//记录表名
-				if((lastTok != null && tok== Token.IDENTIFIER || tok== Token.USER) && (lastTok == Token.FROM || lastTok == Token.INTO || lastTok == Token.UPDATE)){
+			}else if(tok == Token.FROM || tok == Token.IDENTIFIER || tok == Token.INTO || tok == Token.UPDATE || tok == Token.USER || tok == Token.JOIN){//记录表名
+				if((lastTok != null && tok== Token.IDENTIFIER || tok== Token.USER) && (lastTok == Token.FROM || lastTok == Token.INTO || lastTok == Token.UPDATE || lastTok == Token.JOIN)){
 					tableSet.add(lexer.stringVal());
 				}
 				lastTok = tok;
