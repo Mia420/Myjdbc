@@ -1,4 +1,4 @@
-package org.dc.jdbc.core.base;
+package org.dc.jdbc.core.operate;
 
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -9,32 +9,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.sql.DataSource;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.dc.jdbc.core.ConnectionManager;
-import org.dc.jdbc.core.DataSourceManager;
 import org.dc.jdbc.core.GlobalCache;
-/**
- * 元操作父类，所有操作继承此类
- * @author DC
- */
-public abstract class OperSuper extends JdbcSuper{
-	private static final Log jdbclog = LogFactory.getLog(OperSuper.class);
-	public void close(PreparedStatement ps,ResultSet rs){
-		close(rs);
-		close(ps);
-	}
-	public void close(AutoCloseable ac){
-		if(ac!=null){
-			try{
-				ac.close();
-			}catch (Exception e) {
-				jdbclog.error("",e);
-			}
-		}
-	}
+
+public class BaseDao extends SuperDao {
 	/**
 	 * 编译sql并执行查询
 	 * @param ps
@@ -64,7 +41,7 @@ public abstract class OperSuper extends JdbcSuper{
 		} catch (Exception e) {
 			throw e;
 		}finally{
-			this.close(ps);
+			super.close(ps);
 		}
 	}
 	/**
@@ -96,7 +73,7 @@ public abstract class OperSuper extends JdbcSuper{
 		ResultSetMetaData metaData  = rs.getMetaData();
 		int cols_len = metaData.getColumnCount();
 		Map<String, Object> map = new HashMap<String, Object>(cols_len,1);
-		for(int i=0; i<cols_len; i++){  
+		for(int i=0; i<cols_len; i++){
 			String cols_name = metaData.getColumnLabel(i+1);  
 			Object cols_value = super.getValueByObjectType(metaData, rs, i);
 			map.put(cols_name, cols_value);
@@ -110,7 +87,7 @@ public abstract class OperSuper extends JdbcSuper{
 	 * @param list
 	 * @throws Exception
 	 */
-	public void parseSqlResultToObject(ResultSet rs,Class<?> cls,List<Object> list) throws Exception{
+	public void parseSqlResultToListObject(ResultSet rs,Class<?> cls,List<Object> list) throws Exception{
 		ResultSetMetaData metaData  = rs.getMetaData();
 		int cols_len = metaData.getColumnCount();
 		Map<String,Field> fieldsMap = GlobalCache.getCacheFields(cls);
@@ -146,7 +123,7 @@ public abstract class OperSuper extends JdbcSuper{
 		}
 		return obj_newInsten;
 	}
-	public void parseSqlResultToBaseType(ResultSet rs,List<Object> list) throws Exception{
+	public void parseSqlResultToListBaseType(ResultSet rs,List<Object> list) throws Exception{
 		ResultSetMetaData metaData  = rs.getMetaData();
 		int cols_len = metaData.getColumnCount();
 		if(cols_len>1){
@@ -169,25 +146,5 @@ public abstract class OperSuper extends JdbcSuper{
 		Object cols_value = super.getValueByObjectType(metaData, rs, 0);
 
 		return cols_value;
-	}
-	
-	
-	public String getSQLKey(String sql,Object[] params,String dataSourceName){
-		StringBuilder rtn_params = new StringBuilder();
-		for (int i = 0; i < params.length; i++) {
-			rtn_params.append(String.valueOf(params[i]));
-		}
-		
-		return sql+rtn_params.toString()+dataSourceName;
-	}
-	
-	public String getDataSourceName(Connection conn){
-		Map<DataSource, Connection> dataSourceMap = ConnectionManager.entityLocal.get().getDataSourceMap();
-		for (DataSource dataSource : dataSourceMap.keySet()) {
-			if(dataSourceMap.get(dataSource)==conn){
-				return DataSourceManager.getName(dataSource);
-			}
-		}
-		return null;
 	}
 }

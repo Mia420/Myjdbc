@@ -60,17 +60,7 @@ public class JDBCOperateImp extends OperSuper implements IJdbcOperate{
 				if(rowNum>0){//有数据
 					list = new ArrayList<Object>(rowNum);
 					rs.beforeFirst();
-					ResultSetMetaData metaData  = rs.getMetaData();
-					cols_len = metaData.getColumnCount();
-					while(rs.next()){
-						Map<String, Object> map = new HashMap<String, Object>(cols_len,1);//长度固定，扩容因子调成1
-						for(int i=0; i<cols_len; i++){  
-							String cols_name = metaData.getColumnLabel(i+1);
-							Object cols_value = super.getValueByObjectType(metaData, rs, i);
-							map.put(cols_name, cols_value);
-						}
-						list.add(map);
-					}
+					super.parseSqlResultToListMap(rs, list);
 					if(JDBCConfig.isSQLCache){
 						jedisHelper.setSQLCache(sqlKey,dataSourceName,list);
 					}
