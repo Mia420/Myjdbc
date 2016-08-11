@@ -3,11 +3,11 @@ package org.dc.jdbc.core.operate;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.ArrayList;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
 
-public class DataBaseDao extends BaseDao implements IDataBaseDao{
+public class DataBaseDao implements IDataBaseDao{
 	@SuppressWarnings("unchecked")
 	@Override
 	public  <T> T selectOne(Connection conn,String sql,Class<? extends T> cls,Object[] params) throws Exception{
@@ -15,7 +15,7 @@ public class DataBaseDao extends BaseDao implements IDataBaseDao{
 		PreparedStatement ps = null;
 		try {
 			ps = conn.prepareStatement(sql);
-			rs = super.preparedSQLReturnRS(ps, sql, params);
+			rs = JDBCUtil.preparedSQLReturnRS(ps, sql, params);
 
 			int row = 0;
 			if(rs.last() && (row = rs.getRow())>1){
@@ -23,19 +23,19 @@ public class DataBaseDao extends BaseDao implements IDataBaseDao{
 			}
 			if(row==1){//判断是否有返回结果，有的话执行下面转化操作
 				if(cls==null || Map.class.isAssignableFrom(cls)){
-					return (T) super.parseSqlResultToMap(rs);
+					return (T) JDBCUtil.parseSqlResultToMap(rs);
 				}else{
 					if(cls.getClassLoader()==null){//java基本类型
-						return (T) super.parseSqlResultToBaseType(rs);
+						return (T) JDBCUtil.parseSqlResultToBaseType(rs);
 					}else{//java对象
-						return (T) super.parseSqlResultToObject(rs, cls);
+						return (T) JDBCUtil.parseSqlResultToObject(rs, cls);
 					}
 				}
 			}
 		} catch (Exception e) {
 			throw e;
 		}finally{
-			super.close(ps,rs);
+			JDBCUtil.close(ps,rs);
 		}
 		return null;
 	}
@@ -46,55 +46,89 @@ public class DataBaseDao extends BaseDao implements IDataBaseDao{
 		PreparedStatement ps = null;
 		try {
 			ps = conn.prepareStatement(sql);
-			rs = super.preparedSQLReturnRS(ps, sql, params);
+			rs = JDBCUtil.preparedSQLReturnRS(ps, sql, params);
 			rs.last();
 			int rowNum = rs.getRow();
 			if(rowNum>0){
 				rs.beforeFirst();
-				List<Object> list = new ArrayList<Object>(rowNum);
-
 				if(cls==null || Map.class.isAssignableFrom(cls)){//封装成Map
-					super.parseSqlResultToListMap(rs,list);
+					return (List<T>) JDBCUtil.parseSqlResultToListMap(rs);
 				}else{
 					if(cls.getClassLoader()==null){//封装成基本类型
-						super.parseSqlResultToListBaseType(rs,list);
+						return (List<T>) JDBCUtil.parseSqlResultToListBaseType(rs);
 					}else{//对象
-						super.parseSqlResultToListObject(rs,cls,list);
+						return (List<T>) JDBCUtil.parseSqlResultToListObject(rs,cls);
 					}
 				}
-				return (List<T>) list;
 			}
 		} catch (Exception e) {
 			throw e;
 		}finally{
-			super.close(ps,rs);
+			JDBCUtil.close(ps,rs);
 		}
 		return null;
 	}
 
 	@Override
 	public int update(Connection conn, String sql, Object[] params) throws Exception {
-		return 0;
+		return JDBCUtil.preparedAndExcuteSQL(conn, sql, params);
 	}
 
 	@Override
 	public int insert(Connection conn, String sql, Object[] params) throws Exception {
-		return 0;
+		return JDBCUtil.preparedAndExcuteSQL(conn, sql, params);
 	}
 
 	@Override
 	public int[] insertBatch(Connection conn, String sql, Object[][] params) throws Exception {
-		return null;
+		PreparedStatement ps = null;
+		try {
+			ps = conn.prepareStatement(sql);
+			if(params!=null && params.length>0){
+				for (int i = 0; i < params.length; i++) {
+					JDBCUtil.setParams(ps, params[i]);
+					ps.addBatch();
+				}
+			}
+			return ps.executeBatch();
+		} catch (Exception e) {
+			throw e;
+		}finally{
+			JDBCUtil.close(ps);
+		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T insertRtnPKKey(Connection conn, String sql, Object[] params) throws Exception {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+			JDBCUtil.setParams(ps, params);
+			ps.executeUpdate();
+			rs = ps.getGeneratedKeys();
+			rs.last();
+			int rowNum = rs.getRow();
+			if(rowNum>0){
+				if(rowNum==1){
+					return (T) rs.getObject(1);
+				}else{
+					rs.beforeFirst();
+					return (T) JDBCUtil.parseSqlResultToListBaseType(rs);
+				}
+			}
+		} catch (Exception e) {
+			throw e;
+		}finally{
+			JDBCUtil.close(ps,rs);
+		}
 		return null;
 	}
 
 	@Override
 	public int delete(Connection conn, String sql, Object[] params) throws Exception {
-		return 0;
+		return JDBCUtil.preparedAndExcuteSQL(conn, sql, params);
 	}
 	
 }

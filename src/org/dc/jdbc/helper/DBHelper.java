@@ -1,6 +1,5 @@
 package org.dc.jdbc.helper;
 
-import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
@@ -11,9 +10,8 @@ import org.dc.jdbc.config.JDBCConfig;
 import org.dc.jdbc.core.ConnectionManager;
 import org.dc.jdbc.core.ContextHandle;
 import org.dc.jdbc.core.inter.IConnectionManager;
-import org.dc.jdbc.core.operate.IJdbcOperate;
-import org.dc.jdbc.core.operate.JDBCOperateImp;
-import org.dc.jdbc.core.proxy.JDBCCacheProxy;
+import org.dc.jdbc.core.operate.DataBaseDao;
+import org.dc.jdbc.core.operate.IDataBaseDao;
 import org.dc.jdbc.core.sqlhandler.PrintSqlLogHandler;
 import org.dc.jdbc.core.sqlhandler.XmlSqlHandler;
 import org.dc.jdbc.entity.SqlEntity;
@@ -31,22 +29,11 @@ public class DBHelper {
 	private ContextHandle contextHandler;
 	private static IConnectionManager connectionManager = ConnectionManager.getInstance();
 
-	private static IJdbcOperate OPERATE;
-	static{//初始化
-		JDBCOperateImp imp = JDBCOperateImp.getInstance();
-		if(JDBCConfig.isSQLCache){
-			OPERATE = (IJdbcOperate) Proxy.newProxyInstance(
-					imp.getClass().getClassLoader(), 
-					imp.getClass().getInterfaces(), new JDBCCacheProxy(imp));
-		}else{
-			OPERATE = imp; 
-		}
-	}
+	private static IDataBaseDao OPERATE = new DataBaseDao();
 	public DBHelper(DruidDataSource dataSource){
 		this.dataSource = dataSource;
-		this.init();
 	}
-	private void init(){
+	/*private void init(){
 		final ContextHandle ch = new ContextHandle();
 
 		//初始化程序
@@ -65,7 +52,7 @@ public class DBHelper {
 
 		//初始化连接管理
 		//this.connectionManager  = ConnectionManager.getInstance();
-	}
+	}*/
 
 	public <T> T selectOne(String sqlOrID,Class<? extends T> returnClass,Object...params) throws Exception{
 
@@ -85,8 +72,8 @@ public class DBHelper {
 		SqlEntity sqlEntity = contextHandler.handleRequest(sqlOrID,params);
 		String sql = sqlEntity.getSql();
 		Object[] params_obj = sqlEntity.getParams();
-
-		Connection conn = connectionManager.getConnection(dataSource);
+		//1,根据解析出来的sqlentity得到数据源
+		Connection conn = connectionManager.getConnection(sqlEntity.getCurrentDataSource());
 		return OPERATE.selectList(conn,sql,returnClass,params_obj);
 	}
 	public List<Map<String,Object>> selectList(String sqlOrID,Object...params) throws Exception{

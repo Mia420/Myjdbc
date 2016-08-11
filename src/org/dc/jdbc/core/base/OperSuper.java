@@ -110,7 +110,7 @@ public abstract class OperSuper extends JdbcSuper{
 	 * @param list
 	 * @throws Exception
 	 */
-	public void parseSqlResultToObject(ResultSet rs,Class<?> cls,List<Object> list) throws Exception{
+	public void parseSqlResultToListObject(ResultSet rs,Class<?> cls,List<Object> list) throws Exception{
 		ResultSetMetaData metaData  = rs.getMetaData();
 		int cols_len = metaData.getColumnCount();
 		Map<String,Field> fieldsMap = GlobalCache.getCacheFields(cls);
@@ -121,7 +121,6 @@ public abstract class OperSuper extends JdbcSuper{
 				Field field = fieldsMap.get(cols_name);
 				if(field!=null){
 					Object cols_value =  super.getValueByObjectType(metaData, rs, i);
-
 					field.setAccessible(true);
 					field.set(obj_newInsten, cols_value);
 				}
